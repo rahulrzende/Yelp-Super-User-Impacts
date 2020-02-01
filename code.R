@@ -1,31 +1,44 @@
+# set working directory
 setwd("Z:/yelp-version 6")
+
+# read in data
 business <- read.csv("yelp_business.csv") # 174567 businesses in all
+
+# subset dataframe for required data
 LV.businesses <- subset(business, city == "Las Vegas") # 26775 businesses
 LV.restaurants <- subset(LV.businesses, grepl("*Restaurant*", LV.businesses$categories)) #5902 restaurants
+
+# write subsetted dataframes for future use
 write.csv(LV.businesses, file = "LV_businesses.csv", row.names = FALSE)
 write.csv(LV.restaurants, file = "LV_restaurants.csv", row.names = FALSE)
+
 # subset the business_attribs_hrs dataset for LV restaurants
 LV.business.attribs.hrs <- read.csv("LV_business_attribs_hrs.csv")
 LV.restaurant.attribs.hrs <- merge(LV.restaurants, LV.business.attribs.hrs, by = "business_id")
 write.csv(LV.restaurant.attribs.hrs, file = "LV_restaurant_attribs_hrs.csv", row.names = FALSE)
+
 # subset the business_checkins dataset for LV restaurants
 LV.business.checkins <- read.csv("LV_business_checkins.csv")
 LV.restaurant.checkins <- merge(LV.restaurants, LV.business.checkins, by = "business_id")
 write.csv(LV.restaurant.checkins, file = "LV_restaurant_checkins.csv", row.names = FALSE)
+
 # subset the business_tips dataset for LV restaurants
 LV.business.tips <- read.csv("LV_business_tips.csv")
 LV.restaurant.tips <- merge(LV.restaurants, LV.business.tips, by = "business_id")
 write.csv(LV.restaurant.tips, file = "LV_restaurant_tips.csv", row.names = FALSE)
+
 # subset the business_reviews_users dataset for LV restaurants
 LV.business.reviews.users <- read.csv("LV_business_reviews_users.csv")
 LV.restaurants.reviews.users <- merge(LV.restaurants, LV.business.reviews.users, by = "business_id")
 write.csv(LV.restaurants.reviews.users, file = "LV_restaurants_reviews_users.csv", row.names = FALSE)
+
 # load all data for doing analysis
 attribs.hrs <- read.csv("LV_restaurant_attribs_hrs.csv")
 checkins <- read.csv("LV_restaurant_checkins.csv")
 tips <- read.csv("LV_restaurant_tips.csv")
 restaurants <- read.csv("LV_restaurants.csv")
 reviews.users <- read.csv("LV_restaurants_reviews_users.csv")
+
 # decide on a criteria to identify super-users in Las Vegas
 colnames(reviews.users)
 NROW(unique(reviews.users$user_id)) # 337874 unique users/reviewers
@@ -35,6 +48,7 @@ NROW(subset(no.of.reviews.per.users, business_id > 150)) # 115 users
 NROW(subset(no.of.reviews.per.users, business_id > 200)) # 58 users
 NROW(subset(no.of.reviews.per.users, business_id > 250)) # 34 users
 NROW(subset(no.of.reviews.per.users, business_id > 300)) # 15 users --> seems like a decent choice to go forward with
+
 # we find out the super-users based on identified criteria
 library(dplyr)
 subsetted.restaurant.reviews.and.dates <- select(reviews.users, business_id, user_id, date) # all restaurants here, with business & user & date
@@ -45,6 +59,7 @@ number.of.reviews.posted <- subset(temp1, business_id > 300)[2]
 LV.super.users <- cbind(list.of.super.users, number.of.reviews.posted)
 LV.super.users <- LV.super.users %>% rename(num_of_reviews = business_id)
 write.csv(LV.super.users, file = "LV_super_users_vs_number_of_reviews.csv", row.names = FALSE)
+
 # moving on, we subset for the restaurants that our super-users have reviewed
 super.users.and.reviewed.restaurants <- inner_join(temp, list.of.super.users, by = "user_id")
 write.csv(super.users.and.reviewed.restaurants, file = "LV_super_users_and_restaurants_reviewed.csv", row.names = FALSE)
@@ -52,6 +67,7 @@ temp3 <- select(super.users.and.reviewed.restaurants, business_id, user_id)
 temp4 <- aggregate(user_id ~ business_id, data = temp3, FUN = NROW)
 temp4[order(temp4$user_id, decreasing = TRUE),][1,1]
 subset(super.users.and.reviewed.restaurants, business_id == "qqs7LP4TXAoOrSlaKRfz3A") 
+
 # getting the dates this restaurant was reviewed by super-users
 # over here, we find out some info about reviews posted for the restaurant mentioned above
 tmp1 <- subset(subsetted.restaurant.reviews.and.dates, business_id == "qqs7LP4TXAoOrSlaKRfz3A") # 1093 reviews in all
@@ -65,10 +81,11 @@ summary(tmp1$date)
 # this was when 3nDUQBjKyVor5wV0reJChg reviewed : 2014-07-08
 NROW(subset(subsetted.restaurant.reviews.and.dates, business_id == "qqs7LP4TXAoOrSlaKRfz3A" & date > "2014-07-08")) # 543 
 NROW(subset(subsetted.restaurant.reviews.and.dates, business_id == "qqs7LP4TXAoOrSlaKRfz3A" & date < "2014-07-08")) # 549
+
 # now we create a loop to find out the impact of a specific super-user on our set of restaurants
 sample.of.restaurants <- unique(super.users.and.reviewed.restaurants[1])
 #set.seed(10)
-#sample.of.restaurants <-
+#sample.of.restaurants 
 super.users.and.reviewed.restaurants[sample(nrow(super.users.and.reviewed.restaurants), 50), ][1] # randomly select 50 restaurants
 super.user <- "bLbSNkLggFnqwNNzzq-Ijw" # choose the super-user who has posted most reviews, for better hit-rate
 unique(select(subset(reviews.users, user_id == "bLbSNkLggFnqwNNzzq-Ijw"), name.y)) # Stefany
@@ -96,10 +113,12 @@ date.super.user.visited & business_id == restaurant.business.id))
 }
 # nrow(subset(subsetted.restaurant.reviews.and.dates, date > "2014-09-22" & business_id == "Wyjk6RBeOPQr7td5Tqwksw")) # user_id == "bLbSNkLggFnqwNNzzq-Ijw" & business_id == "Tv19MQrLgdsvSG0myMYZBw"
 # nrow(subset(subsetted.restaurant.reviews.and.dates, date < "2014-09-22" & business_id == "Wyjk6RBeOPQr7td5Tqwksw")) # user_id == "bLbSNkLggFnqwNNzzq-Ijw" & business_id == "Tv19MQrLgdsvSG0myMYZBw"
+
 # for hypothesis testing and t-test
 collected.stats.non.na <- subset(collected.stats, business_id != "NA")
 write.csv(collected.stats.non.na, file = "stats_2.csv", row.names = FALSE)
-# for word cloud
+
+# for generating word cloud
 selected.columns.for.word.cloud <- select(reviews.users, business_id, user_id, date, text)
 temp.merged <- merge(selected.columns.for.word.cloud, collected.stats.non.na, by="business_id")
 merged.and.selected <- select(temp.merged, business_id, user_id, date, text)
